@@ -2,3 +2,4 @@ ipl_male_json/
 node_modules/
 .env
 database_plan.md
+frontend-design.md
