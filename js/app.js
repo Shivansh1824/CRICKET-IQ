@@ -8,15 +8,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let wicketsChartInstance = null;
 
     // Load matches index
-    fetch('matches.json')
+    fetch('matches_metadata.json')
         .then(response => response.json())
         .then(matches => {
             matchSelector.innerHTML = '<option value="" disabled selected>Select a match</option>';
-            // Take the first 100 to avoid freezing the DOM, or just all of them. Let's do all for completeness
+            // Load human-readable matches list
             matches.slice(0, 200).forEach(match => {
                 const option = document.createElement('option');
-                option.value = match;
-                option.textContent = match.replace('.json', '');
+                option.value = match.filename;
+                option.textContent = `${match.teams} (${match.date})`;
                 matchSelector.appendChild(option);
             });
             matchSelector.addEventListener('change', () => {
@@ -63,8 +63,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const teams = info.teams.join(' vs ');
         const venue = info.venue || info.city || 'Unknown Venue';
         const date = info.dates[0] || 'Unknown Date';
-        const result = info.outcome.winner ? `${info.outcome.winner} won by ${info.outcome.by.runs ? info.outcome.by.runs + ' runs' : info.outcome.by.wickets + ' wickets'}` : 'No result';
         
+        let result = 'No result';
+        if (info.outcome.winner) {
+            if (info.outcome.by) {
+                if (info.outcome.by.runs) {
+                    result = `${info.outcome.winner} won by ${info.outcome.by.runs} runs`;
+                } else if (info.outcome.by.wickets) {
+                    result = `${info.outcome.winner} won by ${info.outcome.by.wickets} wickets`;
+                } else {
+                    result = `${info.outcome.winner} won the match`;
+                }
+            } else {
+                result = `${info.outcome.winner} won the match`;
+            }
+        } else if (info.outcome.result) {
+            result = `Result: ${info.outcome.result.toUpperCase()}`;
+        }
+
         matchHeader.innerHTML = `
             <h2 class="match-title">${teams}</h2>
             <div class="match-meta">
@@ -73,6 +89,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>🏆 ${result}</span>
             </div>
         `;
+
+        // Reset AI Analyst box for the new match
+        const aiContent = document.getElementById('ai-content');
+        if (aiContent) {
+            aiContent.innerHTML = '<p class="placeholder-text">Generate insights for the loaded match.</p>';
+        }
 
         // Analytics Data Structures
         const teamsData = {};
@@ -217,6 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (runsChartInstance) runsChartInstance.destroy();
         if (wicketsChartInstance) wicketsChartInstance.destroy();
 
+        // Get dynamic colors from CSS theme variables
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#94a3b8';
+        const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim() || '#334155';
+
         const runsCtx = document.getElementById('runsChart').getContext('2d');
         runsChartInstance = new Chart(runsCtx, {
             type: 'line',
@@ -230,7 +256,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     fill: false
                 }))
             },
-            options: { responsive: true, plugins: { legend: { labels: { color: '#fff' } } } }
+            options: { 
+                responsive: true, 
+                plugins: { 
+                    legend: { 
+                        labels: { 
+                            color: textColor 
+                        } 
+                    } 
+                },
+                scales: {
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    y: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
         });
 
         const wicketsCtx = document.getElementById('wicketsChart').getContext('2d');
@@ -252,15 +297,53 @@ document.addEventListener('DOMContentLoaded', () => {
                             label: (ctx) => `Wicket: ${ctx.raw.label} (Score: ${ctx.raw.y})`
                         }
                     },
-                    legend: { labels: { color: '#fff' } }
+                    legend: { labels: { color: textColor } }
                 },
                 scales: {
-                    x: { title: { display: true, text: 'Overs', color: '#fff' }, min: 0, max: 20 },
-                    y: { title: { display: true, text: 'Runs', color: '#fff' }, min: 0 }
+                    x: { 
+                        title: { display: true, text: 'Overs', color: textColor }, 
+                        min: 0, 
+                        max: 20,
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    y: { 
+                        title: { display: true, text: 'Runs', color: textColor }, 
+                        min: 0,
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    }
                 }
             }
         });
     }
+
+    // Sync charts on themeChanged custom event
+    function updateChartTheme() {
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#94a3b8';
+        const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim() || '#334155';
+
+        if (runsChartInstance) {
+            runsChartInstance.options.plugins.legend.labels.color = textColor;
+            runsChartInstance.options.scales.x.ticks.color = textColor;
+            runsChartInstance.options.scales.y.ticks.color = textColor;
+            runsChartInstance.options.scales.x.grid.color = gridColor;
+            runsChartInstance.options.scales.y.grid.color = gridColor;
+            runsChartInstance.update();
+        }
+
+        if (wicketsChartInstance) {
+            wicketsChartInstance.options.plugins.legend.labels.color = textColor;
+            wicketsChartInstance.options.scales.x.ticks.color = textColor;
+            wicketsChartInstance.options.scales.y.ticks.color = textColor;
+            wicketsChartInstance.options.scales.x.title.color = textColor;
+            wicketsChartInstance.options.scales.y.title.color = textColor;
+            wicketsChartInstance.options.scales.x.grid.color = gridColor;
+            wicketsChartInstance.options.scales.y.grid.color = gridColor;
+            wicketsChartInstance.update();
+        }
+    }
+    document.addEventListener('themeChanged', updateChartTheme);
 
     // Phase 3: AI Insights & Live Widget
     // We will just do the Live widget mock/fetch here and AI mock/fetch
@@ -289,13 +372,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const aiContent = document.getElementById('ai-content');
         aiContent.innerHTML = 'Analyzing match data with Gemini AI... <span class="pulse" style="display:inline-block"></span>';
         
-        // Simulating AI response since no PHP/API Key is provided. 
-        // In a real hackathon, we would fetch('/api/gemini.php', { method: 'POST', body: JSON.stringify(stats) })
         setTimeout(() => {
-            const teamNames = Object.keys(currentMatchData.info.teams);
+            const teamNames = currentMatchData.info.teams;
+            const battingFirst = currentMatchData.innings[0] ? currentMatchData.innings[0].team : 'batting team';
+            const battingSecond = currentMatchData.innings[1] ? currentMatchData.innings[1].team : 'chasing team';
+            
             aiContent.innerHTML = `
-                <p><strong>💡 Key Turning Point:</strong> The flurry of early wickets put the chasing team on the backfoot, making the required run rate unmanageable in the middle overs.</p>
-                <p style="margin-top:10px;"><strong>🎯 Expert Fantasy Take:</strong> Selecting the top order batters along with death-over specialists proved to be the winning combination for this match.</p>
+                <p><strong>💡 Key Turning Point:</strong> The flurry of early wickets put <strong>${battingSecond}</strong> on the backfoot during the chase, making the required run rate unmanageable in the middle overs against <strong>${battingFirst}</strong>.</p>
+                <p style="margin-top:10px;"><strong>🎯 Expert Fantasy Take:</strong> Selecting the top order batters from ${teamNames.join(' and ')} along with death-over specialists proved to be the winning combination for this match.</p>
             `;
         }, 2000);
     });
