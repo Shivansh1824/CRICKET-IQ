@@ -685,10 +685,20 @@ button {
     transition: all 0.2s ease;
 }
 
+.form-group input::placeholder {
+    color: #94a3b8; /* High-contrast Slate-400 for dark mode accessibility */
+    opacity: 0.75;
+}
+
 :root.light-theme .form-group input {
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.1);
     color: #0f172a;
+}
+
+:root.light-theme .form-group input::placeholder {
+    color: #64748b; /* High-contrast Slate-500 for light mode accessibility */
+    opacity: 0.85;
 }
 
 .form-group input:focus {
@@ -745,18 +755,28 @@ button {
     border: none;
     color: var(--accent-primary);
     font-weight: 600;
-    padding: 0 5px;
+    padding: 6px 12px; /* Touch target enhancement */
     font-size: 0.95rem;
     text-decoration: none;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
 }
 
 #auth-switch-action:hover {
     text-decoration: underline;
     color: #34d399;
+    background: rgba(16, 185, 129, 0.08); /* Hover context cue */
+}
+
+#auth-switch-action:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
 }
 
 :root.light-theme #auth-switch-action:hover {
     color: #059669;
+    background: rgba(5, 150, 105, 0.08);
 }
 
 .divider {
@@ -801,7 +821,13 @@ button {
 
 :root.light-theme .google-btn {
     border: 1px solid #cbd5e1;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+:root.light-theme .google-btn:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 /* Floating Action Theme Toggle for Dashboard */
