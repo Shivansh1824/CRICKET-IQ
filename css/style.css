@@ -738,7 +738,10 @@ button {
 
 .auth-switch {
     margin-top: 1.5rem;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
     font-size: 0.95rem;
 }
 
@@ -751,22 +754,33 @@ button {
 }
 
 #auth-switch-action {
+    position: relative;
     background: none;
     border: none;
     color: var(--accent-primary);
     font-weight: 600;
-    padding: 6px 12px; /* Touch target enhancement */
+    padding: 2px 6px;
     font-size: 0.95rem;
     text-decoration: none;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 4px;
     transition: all 0.2s ease;
+}
+
+/* Expand touch target to 44px for accessibility without visual offset */
+#auth-switch-action::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    bottom: -10px;
+    left: -10px;
+    right: -10px;
 }
 
 #auth-switch-action:hover {
     text-decoration: underline;
     color: #34d399;
-    background: rgba(16, 185, 129, 0.08); /* Hover context cue */
+    background: rgba(16, 185, 129, 0.08);
 }
 
 #auth-switch-action:focus-visible {
