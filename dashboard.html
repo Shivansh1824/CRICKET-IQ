@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CricketIQ - Fan Intelligence</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="js/theme.js"></script>
+</head>
+<body>
+    <button id="theme-toggle" class="theme-toggle-fixed" aria-label="Toggle Theme">☀️</button>
+    <header class="app-header">
+        <div class="logo">
+            <h1>🏏 CricketIQ</h1>
+            <p>Turn raw ball-by-ball data into fan-grade intelligence</p>
+        </div>
+        <div class="live-widget" id="live-widget">
+            <!-- Live API widget goes here -->
+            <div class="live-header">
+                <span class="pulse"></span> LIVE IPL MATCH
+                <button id="refresh-live" class="btn-small">↻</button>
+            </div>
+            <div class="live-content" id="live-content">
+                Fetching live data...
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <aside class="sidebar">
+            <section class="control-panel">
+                <h2>Select Match</h2>
+                <select id="match-selector" class="dropdown">
+                    <option value="" disabled selected>Loading matches...</option>
+                </select>
+                <button id="load-match" class="btn-primary" disabled>Load Analytics</button>
+            </section>
+
+            <section class="ai-analyst">
+                <h2>🧠 Gemini AI Analyst</h2>
+                <div id="ai-content" class="ai-content">
+                    <p class="placeholder-text">Select a match to generate insights.</p>
+                </div>
+                <button id="generate-insights" class="btn-secondary" disabled>Generate Insights</button>
+            </section>
+            
+            <section class="fantasy-suggestions">
+                <h2>🏆 Top Fantasy Picks</h2>
+                <ul id="fantasy-list">
+                    <li class="placeholder-text">Load a match first.</li>
+                </ul>
+            </section>
+        </aside>
+
+        <section class="main-content">
+            <div class="match-header" id="match-header">
+                <h2>Match Overview</h2>
+                <p class="placeholder-text">Select a match from the sidebar to view details.</p>
+            </div>
+
+            <div class="charts-container" style="display: none;" id="charts-container">
+                <div class="chart-card">
+                    <h3>Runs Progression</h3>
+                    <canvas id="runsChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Wickets Timeline</h3>
+                    <canvas id="wicketsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="stats-container" style="display: none;" id="stats-container">
+                <div class="stat-card">
+                    <h3>Top Batters</h3>
+                    <ul id="top-batters"></ul>
+                </div>
+                <div class="stat-card">
+                    <h3>Top Bowlers</h3>
+                    <ul id="top-bowlers"></ul>
+                </div>
+                <div class="stat-card">
+                    <h3>Milestones</h3>
+                    <ul id="milestones"></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
