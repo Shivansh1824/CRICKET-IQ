@@ -268,7 +268,7 @@ button {
 
 /* Landing Page Styles */
 .landing-body {
-    background-image: url('../images/bg-dark.png');
+    background-image: url('../images/bg-light.png'); /* Single image for both modes */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -278,9 +278,10 @@ button {
     min-height: 100vh;
     padding: 2rem;
     position: relative;
-    transition: background-image 0.5s ease;
+    /* transition removed so it doesn't crossfade images, just the overlay */
 }
 
+/* We don't change the background image anymore, we just change the overlay */
 :root.light-theme .landing-body {
     background-image: url('../images/bg-light.png');
 }
@@ -288,20 +289,22 @@ button {
 .landing-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(11, 15, 25, 0.4);
+    background: rgba(11, 15, 25, 0.75); /* Dark overlay to convert light image to dark */
     backdrop-filter: blur(8px);
     z-index: 1;
+    transition: background 0.5s ease, backdrop-filter 0.5s ease;
 }
 
 :root.light-theme .landing-overlay {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15); /* Light overlay */
+    backdrop-filter: blur(4px);
 }
 
 .landing-container {
     position: relative;
     z-index: 2;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.2fr 0.8fr;
     gap: 4rem;
     max-width: 1200px;
     width: 100%;
@@ -315,11 +318,22 @@ button {
     }
 }
 
+/* Remove the global section box style from the landing page */
+section.landing-hero, section.landing-auth {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
 .landing-hero h1 {
-    font-size: 3.5rem;
+    font-size: 4rem;
+    font-weight: 800;
     line-height: 1.1;
+    letter-spacing: -0.02em;
     margin-bottom: 1.5rem;
     color: #ffffff;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .landing-hero h1 span {
@@ -328,53 +342,124 @@ button {
 
 :root.light-theme .landing-hero h1 {
     color: #0f172a;
+    text-shadow: 0 2px 10px rgba(255,255,255,0.5);
 }
 
 .landing-hero p {
     font-size: 1.25rem;
-    color: #cbd5e1;
+    color: #e2e8f0;
     margin-bottom: 2rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    max-width: 90%;
 }
 
 :root.light-theme .landing-hero p {
     color: #334155;
+    text-shadow: none;
 }
 
-.glass-card {
-    background: rgba(21, 27, 43, 0.6);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+.landing-feature-tags {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    align-items: center;
+}
+
+.landing-feature-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(25, 30, 40, 0.6);
+    backdrop-filter: blur(12px);
+    padding: 8px 16px;
     border-radius: 20px;
-    padding: 2.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+:root.light-theme .landing-feature-tag {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0,0,0,0.05);
+    color: #0f172a;
+}
+
+/* Premium Glass Card */
+.glass-card {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+        0 24px 38px 3px rgba(0, 0, 0, 0.2), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 3rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
     transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Subtle shine effect */
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.03), transparent);
+    transform: skewX(-20deg);
+    animation: shine 8s infinite;
+}
+
+@keyframes shine {
+    0% { left: -100%; }
+    20% { left: 200%; }
+    100% { left: 200%; }
 }
 
 :root.light-theme .glass-card {
     background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 
+        0 10px 25px -5px rgba(0, 0, 0, 0.05),
+        0 20px 48px 8px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 1);
+    color: #0f172a;
 }
 
 .auth-tabs {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+:root.light-theme .auth-tabs {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .auth-tab {
     background: none;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0;
     color: var(--text-secondary);
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     border-bottom: 2px solid transparent;
     border-radius: 0;
+    font-weight: 600;
 }
 
 .auth-tab.active {
-    color: var(--text-primary);
+    color: #fff;
     border-bottom-color: var(--accent-primary);
+}
+
+:root.light-theme .auth-tab.active {
+    color: #0f172a;
 }
 
 .form-group {
@@ -384,63 +469,91 @@ button {
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+:root.light-theme .form-group label {
+    color: #475569;
 }
 
 .form-group input {
     width: 100%;
-    padding: 0.8rem 1rem;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 1rem;
     outline: none;
-    transition: background 0.3s, border-color 0.3s;
+    transition: all 0.2s ease;
 }
 
 :root.light-theme .form-group input {
-    background: rgba(0,0,0,0.02);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #0f172a;
 }
 
 .form-group input:focus {
+    background: rgba(255, 255, 255, 0.1);
     border-color: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+:root.light-theme .form-group input:focus {
+    background: #ffffff;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
 }
 
 .divider {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 1.5rem 0;
-    color: var(--text-secondary);
+    margin: 2rem 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
 }
 
 .divider::before, .divider::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.divider:not(:empty)::before { margin-right: .5em; }
-.divider:not(:empty)::after { margin-left: .5em; }
+:root.light-theme .divider::before, :root.light-theme .divider::after {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
 
 .google-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    background: #fff;
-    color: #333;
-    width: 100%;
-    padding: 0.8rem;
-    border-radius: 8px;
+    gap: 12px;
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-radius: 12px;
+    padding: 0.9rem;
     font-weight: 600;
-    border: 1px solid #ddd;
-    margin-bottom: 1rem;
+    width: 100%;
+    transition: all 0.2s ease;
 }
+
 .google-btn:hover {
-    background: #f1f1f1;
+    background: #f8fafc;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    transform: translateY(-1px);
 }
+
+:root.light-theme .google-btn {
+    border: 1px solid #cbd5e1;
+}
+
+
 
 .theme-toggle-fixed {
     position: fixed;
