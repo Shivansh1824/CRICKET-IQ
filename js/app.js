@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const matchSelector = document.getElementById('match-selector');
     const loadMatchBtn = document.getElementById('load-match');
     const generateInsightsBtn = document.getElementById('generate-insights');
@@ -7,51 +7,201 @@ document.addEventListener('DOMContentLoaded', () => {
     let runsChartInstance = null;
     let wicketsChartInstance = null;
 
-    // Load matches index
-    fetch('matches_metadata.json')
-        .then(response => response.json())
-        .then(matches => {
+    // Verify session and load user display info
+    async function checkSession() {
+        if (!window.cricIqAuth) {
+            console.error("Auth library not loaded!");
+            return;
+        }
+        const user = await window.cricIqAuth.getUser();
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
+        }
+        // Update user header text
+        const userDisplay = document.getElementById('user-display');
+        if (userDisplay) {
+            userDisplay.textContent = user.user_metadata?.full_name || user.email;
+        }
+        // Sign out button
+        const signoutBtn = document.getElementById('signout-btn');
+        if (signoutBtn) {
+            signoutBtn.addEventListener('click', async () => {
+                await window.cricIqAuth.signOut();
+            });
+        }
+    }
+    await checkSession();
+
+    // Re-assemble match and deliveries records into the Cricsheet format
+    function reassembleMatchData(match, deliveries) {
+        let inn1Team = match.team1;
+        let inn2Team = match.team2;
+        if (match.toss_winner && match.toss_decision) {
+            const tossWinner = match.toss_winner;
+            const tossDecision = match.toss_decision;
+            const otherTeam = (tossWinner === match.team1) ? match.team2 : match.team1;
+
+            if (tossDecision === 'bat') {
+                inn1Team = tossWinner;
+                inn2Team = otherTeam;
+            } else {
+                inn1Team = otherTeam;
+                inn2Team = tossWinner;
+            }
+        }
+
+        const info = {
+            teams: [match.team1, match.team2],
+            venue: match.venue,
+            city: match.city,
+            dates: [match.date],
+            outcome: {
+                winner: match.winner,
+                by: {}
+            },
+            player_of_match: match.player_of_the_match ? [match.player_of_the_match] : []
+        };
+
+        if (match.win_margin_runs > 0) {
+            info.outcome.by.runs = match.win_margin_runs;
+        } else if (match.win_margin_wickets > 0) {
+            info.outcome.by.wickets = match.win_margin_wickets;
+        } else if (!match.winner) {
+            info.outcome.result = 'no result';
+        }
+
+        const inningsMap = {};
+        deliveries.forEach(del => {
+            if (!inningsMap[del.innings]) {
+                inningsMap[del.innings] = {
+                    team: del.innings === 1 ? inn1Team : (del.innings === 2 ? inn2Team : `Innings ${del.innings}`),
+                    overs: []
+                };
+            }
+
+            const inn = inningsMap[del.innings];
+            
+            let overObj = inn.overs.find(o => o.over === del.over);
+            if (!overObj) {
+                overObj = {
+                    over: del.over,
+                    deliveries: []
+                };
+                inn.overs.push(overObj);
+            }
+
+            const delivery = {
+                batter: del.batter,
+                bowler: del.bowler,
+                non_striker: del.non_striker,
+                runs: {
+                    batter: del.runs_batter,
+                    extras: del.runs_extras,
+                    total: del.runs_total
+                }
+            };
+
+            if (del.wides > 0 || del.noballs > 0 || del.byes > 0 || del.legbyes > 0) {
+                delivery.extras = {};
+                if (del.wides > 0) delivery.extras.wides = del.wides;
+                if (del.noballs > 0) delivery.extras.noballs = del.noballs;
+                if (del.byes > 0) delivery.extras.byes = del.byes;
+                if (del.legbyes > 0) delivery.extras.legbyes = del.legbyes;
+            }
+
+            if (del.wicket_kind) {
+                delivery.wickets = [{
+                    kind: del.wicket_kind,
+                    player_out: del.player_out,
+                    fielders: del.fielders ? del.fielders.map(name => ({ name })) : []
+                }];
+            }
+
+            overObj.deliveries.push(delivery);
+        });
+
+        const innings = Object.keys(inningsMap)
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(key => {
+                inningsMap[key].overs.sort((a, b) => a.over - b.over);
+                return inningsMap[key];
+            });
+
+        return { info, innings };
+    }
+
+    // Load matches index from Supabase
+    async function loadMatches() {
+        try {
+            const { data: matches, error } = await supabaseClient
+                .from('matches')
+                .select('id, team1, team2, date')
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+
             matchSelector.innerHTML = '<option value="" disabled selected>Select a match</option>';
-            // Load human-readable matches list
-            matches.slice(0, 200).forEach(match => {
+            matches.forEach(match => {
                 const option = document.createElement('option');
-                option.value = match.filename;
-                option.textContent = `${match.teams} (${match.date})`;
+                option.value = match.id;
+                option.textContent = `${match.team1} vs ${match.team2} (${match.date})`;
                 matchSelector.appendChild(option);
             });
+
             matchSelector.addEventListener('change', () => {
                 loadMatchBtn.disabled = false;
             });
-        })
-        .catch(err => {
-            console.error("Failed to load matches list. Make sure you run this on a local server.", err);
+        } catch (err) {
+            console.error("Failed to load matches list:", err);
             matchSelector.innerHTML = '<option value="" disabled selected>Error loading matches</option>';
-        });
+        }
+    }
+    await loadMatches();
 
-    loadMatchBtn.addEventListener('click', () => {
-        const selectedMatch = matchSelector.value;
-        if (!selectedMatch) return;
+    // Load match details and analytics
+    loadMatchBtn.addEventListener('click', async () => {
+        const matchId = matchSelector.value;
+        if (!matchId) return;
 
         loadMatchBtn.textContent = 'Loading...';
         loadMatchBtn.disabled = true;
 
-        fetch(`ipl_male_json/${selectedMatch}`)
-            .then(res => res.json())
-            .then(data => {
-                currentMatchData = data;
-                processMatchData(data);
-                document.getElementById('charts-container').style.display = 'grid';
-                document.getElementById('stats-container').style.display = 'grid';
-                generateInsightsBtn.disabled = false;
-                loadMatchBtn.textContent = 'Load Analytics';
-                loadMatchBtn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Failed to load match data.");
-                loadMatchBtn.textContent = 'Load Analytics';
-                loadMatchBtn.disabled = false;
-            });
+        try {
+            // 1. Fetch match metadata
+            const { data: match, error: matchError } = await supabaseClient
+                .from('matches')
+                .select('*')
+                .eq('id', matchId)
+                .single();
+
+            if (matchError) throw matchError;
+
+            // 2. Fetch match deliveries
+            const { data: deliveries, error: delError } = await supabaseClient
+                .from('deliveries')
+                .select('*')
+                .eq('match_id', matchId)
+                .order('innings', { ascending: true })
+                .order('over', { ascending: true })
+                .order('ball', { ascending: true });
+
+            if (delError) throw delError;
+
+            // 3. Reassemble and process
+            currentMatchData = reassembleMatchData(match, deliveries);
+            processMatchData(currentMatchData);
+
+            document.getElementById('charts-container').style.display = 'grid';
+            document.getElementById('stats-container').style.display = 'grid';
+            generateInsightsBtn.disabled = false;
+        } catch (err) {
+            console.error(err);
+            alert("Failed to load match data from Supabase.");
+        } finally {
+            loadMatchBtn.textContent = 'Load Analytics';
+            loadMatchBtn.disabled = false;
+        }
     });
 
     function processMatchData(data) {
