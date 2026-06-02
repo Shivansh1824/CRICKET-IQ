@@ -19,7 +19,7 @@ BEGIN
   VALUES (
     new.id,
     new.email,
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1))
+    COALESCE(NULLIF(new.raw_user_meta_data->>'full_name', ''), split_part(new.email, '@', 1))
   )
   ON CONFLICT (id) DO UPDATE
   SET email = EXCLUDED.email,
