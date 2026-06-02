@@ -52,6 +52,15 @@ window.cricIqAuth = {
       .eq('email', email.trim().toLowerCase())
       .maybeSingle();
     return { exists: !!data, error };
+  },
+
+  verifyOtp: async (email, token) => {
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup'
+    });
+    return { data, error };
   }
 
 };

@@ -35,22 +35,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    // Helper map for common email domain typos
-    const domainMap = {
-        'gamil.com': 'gmail.com',
-        'gmaill.com': 'gmail.com',
-        'gmal.com': 'gmail.com',
-        'gamil.co': 'gmail.com',
-        'gml.com': 'gmail.com',
-        'yaho.com': 'yahoo.com',
-        'yhoo.com': 'yahoo.com',
-        'yaho.co': 'yahoo.com',
-        'outlok.com': 'outlook.com',
-        'outlk.com': 'outlook.com',
-        'hotmal.com': 'hotmail.com',
-        'hotmil.com': 'hotmail.com',
-        'icoud.com': 'icloud.com'
-    };
+    // Popular email providers
+    const POPULAR_DOMAINS = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+
+    // Helper function to calculate Levenshtein distance (edit distance)
+    function getLevenshteinDistance(a, b) {
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1, // substitution
+                        matrix[i][j - 1] + 1,     // insertion
+                        matrix[i - 1][j] + 1      // deletion
+                    );
+                }
+            }
+        }
+        return matrix[b.length][a.length];
+    }
 
     function checkEmailTypos(email) {
         const parts = email.split('@');
@@ -62,8 +70,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const username = parts[0];
         const domain = parts[1].toLowerCase();
 
-        if (domainMap[domain]) {
-            const suggestion = `${username}@${domainMap[domain]}`;
+        // If domain is already exact, no suggestion is needed
+        if (POPULAR_DOMAINS.includes(domain)) {
+            emailSuggestion.style.display = 'none';
+            return null;
+        }
+
+        let closestDomain = null;
+        let minDistance = 3; // Allows maximum of 2 single-character differences
+
+        for (const popDomain of POPULAR_DOMAINS) {
+            const distance = getLevenshteinDistance(domain, popDomain);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestDomain = popDomain;
+            }
+        }
+
+        if (closestDomain && minDistance <= 2) {
+            const suggestion = `${username}@${closestDomain}`;
             suggestionLink.textContent = suggestion;
             emailSuggestion.style.display = 'block';
             return suggestion;
@@ -136,8 +161,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetToSignIn();
             emailInput.style.borderColor = '';
             authError.style.display = 'none';
+            emailSuggestion.style.display = 'none';
             return;
         }
+
+        // Check for typos in domain
+        checkEmailTypos(email);
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -256,9 +285,191 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (data && data.session) {
                         window.location.href = 'dashboard.html';
                     } else {
-                        authError.style.color = 'var(--accent-primary)';
-                        authError.textContent = 'Account created successfully! Please check your email to confirm your account.';
-                        authError.style.display = 'block';
+                        // Email verification is required -> Show dynamic 6-digit OTP screen inside the card
+                        authForm.style.display = 'none';
+                        const switchText = document.querySelector('.auth-switch');
+                        if (switchText) {
+                            switchText.style.display = 'none';
+                        }
+                        
+                        // Hide subtitle
+                        authSubtitle.style.display = 'none';
+                        
+                        // Create success verification element
+                        const successState = document.createElement('div');
+                        successState.style.textAlign = 'center';
+                        successState.style.padding = '1rem 0';
+                        successState.style.animation = 'verifyFadeIn 0.5s ease-out forwards';
+                        successState.innerHTML = `
+                            <style>
+                                @keyframes verifyFadeIn {
+                                    from { opacity: 0; transform: translateY(10px); }
+                                    to { opacity: 1; transform: translateY(0); }
+                                }
+                                .otp-input-container {
+                                    display: flex;
+                                    justify-content: center;
+                                    gap: 0.5rem;
+                                    margin: 1.5rem 0;
+                                }
+                                .otp-field {
+                                    width: 2.5rem;
+                                    height: 3.25rem;
+                                    font-size: 1.5rem;
+                                    font-weight: 700;
+                                    text-align: center;
+                                    background: rgba(0, 0, 0, 0.2);
+                                    border: 1px solid rgba(255, 255, 255, 0.1);
+                                    border-radius: 12px;
+                                    color: #ffffff;
+                                    outline: none;
+                                    transition: all 0.2s ease;
+                                }
+                                .otp-field:focus {
+                                    background: rgba(0, 0, 0, 0.3);
+                                    border-color: var(--accent-primary);
+                                    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+                                }
+                                
+                                :root.light-theme .otp-field {
+                                    background: #ffffff;
+                                    border: 1px solid rgba(0, 0, 0, 0.15);
+                                    color: #0f172a;
+                                }
+                                :root.light-theme .otp-field:focus {
+                                    background: #ffffff;
+                                    border-color: var(--accent-primary);
+                                    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+                                }
+                                
+                                .otp-subtitle {
+                                    color: #94a3b8;
+                                    line-height: 1.5;
+                                    font-size: 0.9rem;
+                                    margin: 0;
+                                }
+                                .otp-subtitle strong {
+                                    color: #ffffff;
+                                    font-weight: 600;
+                                }
+                                
+                                :root.light-theme .otp-subtitle {
+                                    color: #475569;
+                                }
+                                :root.light-theme .otp-subtitle strong {
+                                    color: #0f172a;
+                                }
+
+                                .otp-envelope {
+                                    font-size: 3rem; 
+                                    margin-bottom: 1rem;
+                                    color: #ffffff;
+                                }
+                                :root.light-theme .otp-envelope {
+                                    color: #0f172a;
+                                    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+                                }
+
+                                .otp-error-msg {
+                                    color: var(--danger);
+                                    font-size: 0.85rem;
+                                    margin-top: 0.5rem;
+                                    display: none;
+                                }
+                            </style>
+                            <div class="otp-envelope">✉️</div>
+                            <h3 style="margin-bottom: 0.5rem; color: var(--accent-primary); font-size: 1.35rem; font-weight: 700;">Verify Your Account</h3>
+                            <p class="otp-subtitle">
+                                We sent a 6-digit confirmation code to <br><strong style="font-weight: 600;">${email}</strong>.
+                            </p>
+                            
+                            <div class="otp-input-container">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
+                            </div>
+                            
+                            <div id="otp-error" class="otp-error-msg"></div>
+                            
+                            <button id="verify-submit-btn" class="btn-primary btn-glow" style="border: none; margin-top: 1rem;">Verify & Sign In</button>
+                            
+                            <p style="margin-top: 1.5rem; font-size: 0.85rem; color: #64748b;">
+                                Didn't receive the code? <a href="#" id="verify-back-link" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">Back to Sign In</a>
+                            </p>
+                        `;
+                        
+                        authForm.parentElement.appendChild(successState);
+                        
+                        const otpFields = document.querySelectorAll('.otp-field');
+                        const verifyBtn = document.getElementById('verify-submit-btn');
+                        const otpError = document.getElementById('otp-error');
+                        const backLink = document.getElementById('verify-back-link');
+                        
+                        // Automatic focus shifting behavior for the OTP fields
+                        otpFields.forEach((field, index) => {
+                            // Autofocus the first field
+                            if (index === 0) field.focus();
+                            
+                            field.addEventListener('input', (e) => {
+                                // Allow only numeric inputs
+                                field.value = field.value.replace(/[^0-9]/g, '');
+                                
+                                if (field.value.length === 1 && index < otpFields.length - 1) {
+                                    otpFields[index + 1].focus();
+                                }
+                            });
+                            
+                            field.addEventListener('keydown', (e) => {
+                                if (e.key === 'Backspace' && field.value.length === 0 && index > 0) {
+                                    otpFields[index - 1].focus();
+                                }
+                            });
+                        });
+                        
+                        // Call verifyOtp on verifyBtn click
+                        verifyBtn.addEventListener('click', async () => {
+                            let token = "";
+                            otpFields.forEach(field => {
+                                token += field.value;
+                            });
+                            
+                            if (token.length !== 6) {
+                                otpError.textContent = "Please enter all 6 digits of the verification code.";
+                                otpError.style.display = 'block';
+                                return;
+                            }
+                            
+                            otpError.style.display = 'none';
+                            verifyBtn.disabled = true;
+                            verifyBtn.textContent = 'Verifying...';
+                            
+                            const { data, error } = await window.cricIqAuth.verifyOtp(email, token);
+                            verifyBtn.disabled = false;
+                            verifyBtn.textContent = 'Verify & Sign In';
+                            
+                            if (error) {
+                                otpError.textContent = error.message || "Invalid verification code. Please check your spelling.";
+                                otpError.style.display = 'block';
+                                
+                                // Highlight inputs in red to indicate failure
+                                otpFields.forEach(field => {
+                                    field.style.borderColor = 'var(--danger)';
+                                });
+                            } else {
+                                // Success -> Redirect to the main dashboard!
+                                window.location.href = 'dashboard.html';
+                            }
+                        });
+                        
+                        if (backLink) {
+                            backLink.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                window.location.reload();
+                            });
+                        }
                     }
                 }
             } else {
