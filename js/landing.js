@@ -313,14 +313,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     margin: 1.5rem 0;
                                 }
                                 .otp-field {
-                                    width: 2.5rem;
-                                    height: 3.25rem;
-                                    font-size: 1.5rem;
+                                    width: 1.85rem;
+                                    height: 2.75rem;
+                                    font-size: 1.35rem;
                                     font-weight: 700;
                                     text-align: center;
                                     background: rgba(0, 0, 0, 0.2);
                                     border: 1px solid rgba(255, 255, 255, 0.1);
-                                    border-radius: 12px;
+                                    border-radius: 10px;
                                     color: #ffffff;
                                     outline: none;
                                     transition: all 0.2s ease;
@@ -380,10 +380,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div class="otp-envelope">✉️</div>
                             <h3 style="margin-bottom: 0.5rem; color: var(--accent-primary); font-size: 1.35rem; font-weight: 700;">Verify Your Account</h3>
                             <p class="otp-subtitle">
-                                We sent a 6-digit confirmation code to <br><strong style="font-weight: 600;">${email}</strong>.
+                                We sent an 8-digit confirmation code to <br><strong style="font-weight: 600;">${email}</strong>.
                             </p>
                             
                             <div class="otp-input-container">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
+                                <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
                                 <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
                                 <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
                                 <input type="text" maxlength="1" class="otp-field" pattern="[0-9]" inputmode="numeric" required autocomplete="off">
@@ -394,7 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             
                             <div id="otp-error" class="otp-error-msg"></div>
                             
-                            <button id="verify-submit-btn" class="btn-primary btn-glow" style="border: none; margin-top: 1rem;">Verify & Sign In</button>
+                            <button id="verify-submit-btn" type="button" class="btn-primary btn-glow" style="border: none; margin-top: 1rem;">Verify & Sign In</button>
                             
                             <p style="margin-top: 1.5rem; font-size: 0.85rem; color: #64748b;">
                                 Didn't receive the code? <a href="#" id="verify-back-link" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">Back to Sign In</a>
@@ -430,14 +432,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         });
                         
                         // Call verifyOtp on verifyBtn click
-                        verifyBtn.addEventListener('click', async () => {
+                        verifyBtn.addEventListener('click', async (e) => {
+                            e.preventDefault();
                             let token = "";
                             otpFields.forEach(field => {
                                 token += field.value;
                             });
                             
-                            if (token.length !== 6) {
-                                otpError.textContent = "Please enter all 6 digits of the verification code.";
+                            if (token.length !== 8) {
+                                otpError.textContent = "Please enter all 8 digits of the verification code.";
                                 otpError.style.display = 'block';
                                 return;
                             }
