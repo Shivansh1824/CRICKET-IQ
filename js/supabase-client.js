@@ -61,6 +61,17 @@ window.cricIqAuth = {
       type: 'signup'
     });
     return { data, error };
+  },
+
+  signInWithGoogle: async () => {
+    const redirectToUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '') + 'dashboard.html';
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectToUrl
+      }
+    });
+    return { data, error };
   }
 
 };

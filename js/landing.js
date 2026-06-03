@@ -494,6 +494,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    const googleSigninBtn = document.getElementById('google-signin-btn');
+    if (googleSigninBtn) {
+        googleSigninBtn.addEventListener('click', async () => {
+            googleSigninBtn.disabled = true;
+            const originalContent = googleSigninBtn.innerHTML;
+            googleSigninBtn.innerHTML = 'Connecting to Google...';
+            
+            const { error } = await window.cricIqAuth.signInWithGoogle();
+            if (error) {
+                googleSigninBtn.disabled = false;
+                googleSigninBtn.innerHTML = originalContent;
+                authError.textContent = error.message || "Failed to initialize Google Sign-In.";
+                authError.style.display = 'block';
+            }
+        });
+    }
+
     const headerSigninBtn = document.getElementById('header-signin-btn');
     if (headerSigninBtn) {
         headerSigninBtn.addEventListener('click', () => {
