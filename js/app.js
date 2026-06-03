@@ -30,8 +30,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await window.cricIqAuth.signOut();
             });
         }
+
+        // Check user profile for onboarding
+        const { data: profile } = await window.cricIqAuth.getProfile(user.id);
+        
+        if (!profile || !profile.username || !profile.favorite_team) {
+            // Profile incomplete, redirect to landing page for onboarding
+            window.location.href = 'index.html';
+            return false;
+        } else {
+            // Update user header text with onboarded name or username
+            if (userDisplay) {
+                userDisplay.textContent = profile.name || profile.username || user.email;
+            }
+            return true;
+        }
     }
-    await checkSession();
+
+    const sessionValid = await checkSession();
+    // Dashboard loading will conditionally proceed at the bottom based on sessionValid
 
     // Re-assemble match and deliveries records into the Cricsheet format
     function reassembleMatchData(match, deliveries) {
@@ -157,7 +174,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchSelector.innerHTML = '<option value="" disabled selected>Error loading matches</option>';
         }
     }
-    await loadMatches();
+    if (sessionValid) {
+        await loadMatches();
+    }
 
     // Load match details and analytics
     loadMatchBtn.addEventListener('click', async () => {

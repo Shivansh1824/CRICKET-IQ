@@ -140,9 +140,56 @@
                     Sign in with Google
                 </button>
 
-                <div class="auth-switch">
+                <div class="auth-switch" id="auth-switch-container">
                     <span id="auth-switch-text">Don't have an account?</span>
                     <button type="button" id="auth-switch-action">Create one</button>
+                </div>
+
+                <!-- Onboarding Form (Hidden by default) -->
+                <div id="onboarding-section" style="display: none;">
+                    <div class="auth-header" style="margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1.5rem;">Complete Profile</h2>
+                        <p>Let's personalize your CricIQ experience.</p>
+                    </div>
+                    <form id="onboarding-form">
+                        <div class="form-group">
+                            <label>Choose Your Avatar</label>
+                            <div class="avatar-grid" id="avatar-grid">
+                                <!-- Avatars will be injected here via JS -->
+                            </div>
+                            <input type="hidden" id="selected-avatar" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="onboarding-name">Real Name</label>
+                            <input type="text" id="onboarding-name" placeholder="John Doe" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="onboarding-username">Username</label>
+                            <input type="text" id="onboarding-username" placeholder="john_doe" required>
+                            <div id="username-status" class="input-status-msg"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Favorite IPL Team</label>
+                            <div class="custom-dropdown" id="team-dropdown">
+                                <div class="dropdown-selected" id="team-dropdown-selected">
+                                    <span class="placeholder">Select a team</span>
+                                </div>
+                                <div class="dropdown-options" id="team-dropdown-options">
+                                    <!-- Team options injected via JS -->
+                                </div>
+                            </div>
+                            <input type="hidden" id="selected-team" required>
+                        </div>
+
+                        <button type="submit" class="btn-primary btn-glow" id="onboarding-submit" disabled style="margin-top: 1rem;">Complete & Go to Dashboard</button>
+                        
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <button type="button" id="onboarding-signout-btn" style="background: none; border: none; color: var(--text-secondary); font-size: 0.9rem; cursor: pointer; text-decoration: underline;">Cancel and Sign Out</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </section>

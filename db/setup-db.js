@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS public.deliveries (
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
     updated_at TIMESTAMP WITH TIME ZONE,
+    name TEXT,
     username TEXT UNIQUE,
     favorite_team TEXT,
     avatar_url TEXT

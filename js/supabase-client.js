@@ -34,7 +34,10 @@ window.cricIqAuth = {
   signOut: async () => {
     const { error } = await supabaseClient.auth.signOut();
     if (!error) {
-      window.location.href = 'index.html';
+      const path = window.location.pathname;
+      if (!path.endsWith('index.html') && path !== '/' && path !== '') {
+        window.location.href = 'index.html';
+      }
     }
     return { error };
   },
@@ -64,13 +67,42 @@ window.cricIqAuth = {
   },
 
   signInWithGoogle: async () => {
-    const redirectToUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '') + 'dashboard.html';
+    const redirectToUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '') + 'index.html';
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: redirectToUrl
       }
     });
+    return { data, error };
+  },
+
+  checkUsernameExists: async (username) => {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('username', username)
+      .maybeSingle();
+    return { exists: !!data, error };
+  },
+
+  updateProfile: async (userId, profileData) => {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .upsert({ 
+        id: userId,
+        ...profileData,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    return { data, error };
+  },
+
+  getProfile: async (userId) => {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
     return { data, error };
   }
 
