@@ -89,11 +89,11 @@ window.cricIqAuth = {
   updateProfile: async (userId, profileData) => {
     const { data, error } = await supabaseClient
       .from('profiles')
-      .upsert({ 
-        id: userId,
+      .update({ 
         ...profileData,
         updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      })
+      .eq('id', userId);
     return { data, error };
   },
 

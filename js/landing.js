@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (user) {
             const { data: profile } = await window.cricIqAuth.getProfile(user.id);
             if (!profile || !profile.username || !profile.favorite_team) {
-                showOnboardingForm(user, profile);
+                window.location.href = 'form.html';
                 return;
             } else {
                 window.location.href = 'dashboard.html';
@@ -32,198 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // IPL Teams Data for onboarding
-    const iplTeams = [
-        { id: 'CSK', name: 'Chennai Super Kings', color: '#F9CD05' },
-        { id: 'MI', name: 'Mumbai Indians', color: '#004BA0' },
-        { id: 'RCB', name: 'Royal Challengers Bengaluru', color: '#EC1C24' },
-        { id: 'KKR', name: 'Kolkata Knight Riders', color: '#2E0854' },
-        { id: 'SRH', name: 'Sunrisers Hyderabad', color: '#FF822A' },
-        { id: 'DC', name: 'Delhi Capitals', color: '#00008B' },
-        { id: 'RR', name: 'Rajasthan Royals', color: '#EA1A85' },
-        { id: 'PBKS', name: 'Punjab Kings', color: '#DD1F2D' },
-        { id: 'LSG', name: 'Lucknow Super Giants', color: '#A72056' },
-        { id: 'GT', name: 'Gujarat Titans', color: '#1B2133' }
-    ];
 
-    function showOnboardingForm(user, profile) {
-        // Hide normal auth form and header, show onboarding form
-        document.querySelector('.auth-header').style.display = 'none';
-        document.getElementById('auth-form').style.display = 'none';
-        document.querySelector('.divider').style.display = 'none';
-        document.getElementById('google-signin-btn').style.display = 'none';
-        document.getElementById('auth-switch-container').style.display = 'none';
-        
-        const onboardingSection = document.getElementById('onboarding-section');
-        onboardingSection.style.display = 'block';
-
-        const form = document.getElementById('onboarding-form');
-        const nameInput = document.getElementById('onboarding-name');
-        const usernameInput = document.getElementById('onboarding-username');
-        const usernameStatus = document.getElementById('username-status');
-        const avatarGrid = document.getElementById('avatar-grid');
-        const selectedAvatarInput = document.getElementById('selected-avatar');
-        const submitBtn = document.getElementById('onboarding-submit');
-        const teamDropdown = document.getElementById('team-dropdown');
-        const teamDropdownSelected = document.getElementById('team-dropdown-selected');
-        const teamDropdownOptions = document.getElementById('team-dropdown-options');
-        const selectedTeamInput = document.getElementById('selected-team');
-
-        // Pre-fill Name
-        if (user.user_metadata && user.user_metadata.full_name) {
-            nameInput.value = user.user_metadata.full_name;
-        } else if (profile && profile.name) {
-            nameInput.value = profile.name;
-        }
-
-        // Generate Avatar Grid
-        const generateAvatars = () => {
-            avatarGrid.innerHTML = '';
-            for (let i = 1; i <= 10; i++) {
-                const seed = `CricIQ_${user.id}_${i}`;
-                const url = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=transparent`;
-                const div = document.createElement('div');
-                div.className = 'avatar-option';
-                div.innerHTML = `<img src="${url}" alt="Avatar ${i}">`;
-                div.addEventListener('click', () => {
-                    document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedAvatarInput.value = url;
-                    validateForm();
-                });
-                avatarGrid.appendChild(div);
-            }
-        };
-        generateAvatars();
-
-        // Populate Custom Team Dropdown
-        teamDropdownOptions.innerHTML = '';
-        iplTeams.forEach(team => {
-            const div = document.createElement('div');
-            div.className = 'dropdown-item';
-            div.innerHTML = `
-                <div class="team-logo-small" style="background-color: ${team.color};">${team.id}</div>
-                <span>${team.name}</span>
-            `;
-            div.addEventListener('click', () => {
-                teamDropdownSelected.innerHTML = div.innerHTML;
-                selectedTeamInput.value = team.id;
-                teamDropdown.classList.remove('open');
-                validateForm();
-            });
-            teamDropdownOptions.appendChild(div);
-        });
-
-        teamDropdownSelected.addEventListener('click', () => {
-            teamDropdown.classList.toggle('open');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!teamDropdown.contains(e.target)) {
-                teamDropdown.classList.remove('open');
-            }
-        });
-
-        // Username uniqueness validation
-        let usernameTimeout;
-        let isUsernameValid = false;
-
-        const checkUsername = async () => {
-            const val = usernameInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-            usernameInput.value = val;
-
-            if (val.length < 3) {
-                usernameStatus.textContent = 'Username must be at least 3 characters.';
-                usernameStatus.className = 'input-status-msg error';
-                isUsernameValid = false;
-                validateForm();
-                return;
-            }
-
-            usernameStatus.textContent = 'Checking availability...';
-            usernameStatus.className = 'input-status-msg';
-
-            const { exists } = await window.cricIqAuth.checkUsernameExists(val);
-            if (exists) {
-                const alt1 = val + Math.floor(Math.random() * 100);
-                const alt2 = val + '_' + new Date().getFullYear();
-                usernameStatus.innerHTML = `Taken. Try: <span style="text-decoration:underline;cursor:pointer;" onclick="document.getElementById('onboarding-username').value='${alt1}';document.getElementById('onboarding-username').dispatchEvent(new Event('input'))">${alt1}</span>`;
-                usernameStatus.className = 'input-status-msg error';
-                isUsernameValid = false;
-            } else {
-                usernameStatus.textContent = 'Username is available!';
-                usernameStatus.className = 'input-status-msg success';
-                isUsernameValid = true;
-            }
-            validateForm();
-        };
-
-        usernameInput.addEventListener('input', () => {
-            clearTimeout(usernameTimeout);
-            isUsernameValid = false;
-            validateForm();
-            usernameTimeout = setTimeout(checkUsername, 500);
-        });
-
-        if (!usernameInput.value && nameInput.value) {
-            usernameInput.value = nameInput.value.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-            checkUsername();
-        }
-        nameInput.addEventListener('input', validateForm);
-
-        function validateForm() {
-            if (nameInput.value.trim() && isUsernameValid && selectedAvatarInput.value && selectedTeamInput.value) {
-                submitBtn.disabled = false;
-            } else {
-                submitBtn.disabled = true;
-            }
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!submitBtn.disabled) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Saving...';
-                
-                const profileData = {
-                    name: nameInput.value.trim(),
-                    username: usernameInput.value.trim().toLowerCase(),
-                    favorite_team: selectedTeamInput.value,
-                    avatar_url: selectedAvatarInput.value
-                };
-
-                const { error } = await window.cricIqAuth.updateProfile(user.id, profileData);
-                
-                if (error) {
-                    alert("Failed to save profile. Please try again.");
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Complete & Go to Dashboard';
-                } else {
-                    window.location.href = 'dashboard.html';
-                }
-            }
-        });
-
-        // Sign Out from Onboarding
-        const signoutBtn = document.getElementById('onboarding-signout-btn');
-        if (signoutBtn) {
-            signoutBtn.addEventListener('click', async () => {
-                signoutBtn.textContent = 'Signing out...';
-                try {
-                    await window.cricIqAuth.signOut();
-                } catch (err) {
-                    console.error("Sign out error:", err);
-                }
-                // Force clear localStorage in case Supabase library failed or session is cached
-                for (let key in localStorage) {
-                    if (key.startsWith('sb-')) {
-                        localStorage.removeItem(key);
-                    }
-                }
-                window.location.reload();
-            });
-        }
-    }
 
     // Debounce helper to avoid slamming the database on every keystroke
     function debounce(func, delay) {
@@ -484,17 +293,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (data && data.session) {
                         const user = await window.cricIqAuth.getUser();
                         const { data: profile } = await window.cricIqAuth.getProfile(user.id);
-                        showOnboardingForm(user, profile);
+                        window.location.href = 'form.html';
                     } else {
-                        // Email verification is required -> Show dynamic 6-digit OTP screen inside the card
+                        // Email verification is required -> Show dynamic 8-digit OTP screen inside the card
                         authForm.style.display = 'none';
-                        const switchText = document.querySelector('.auth-switch');
-                        if (switchText) {
-                            switchText.style.display = 'none';
-                        }
                         
-                        // Hide subtitle
-                        authSubtitle.style.display = 'none';
+                        const elementsToHide = ['.auth-switch', '.divider', '.auth-header', '#google-signin-btn'];
+                        elementsToHide.forEach(selector => {
+                            const el = document.querySelector(selector);
+                            if (el) el.style.display = 'none';
+                        });
                         
                         // Create success verification element
                         const successState = document.createElement('div');
@@ -667,7 +475,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const user = await window.cricIqAuth.getUser();
                                 const { data: profile } = await window.cricIqAuth.getProfile(user.id);
                                 successState.style.display = 'none';
-                                showOnboardingForm(user, profile);
+                                window.location.href = 'form.html';
                             }
                         });
                         
@@ -695,7 +503,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const user = await window.cricIqAuth.getUser();
                     const { data: profile } = await window.cricIqAuth.getProfile(user.id);
                     if (!profile || !profile.username || !profile.favorite_team) {
-                        showOnboardingForm(user, profile);
+                        window.location.href = 'form.html';
                     } else {
                         window.location.href = 'dashboard.html';
                     }
